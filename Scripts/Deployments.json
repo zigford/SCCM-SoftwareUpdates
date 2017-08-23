@@ -1,11 +1,11 @@
 {
     "SiteSettings": {
-        "ReleasedOrRevised": "30",
+        "ReleasedOrRevised": "SinceLastUpdateGroup",
         "SiteCode": "JPH",
         "SiteServer": "JPH-CM01",
         "UpdatePackage": {
             "PackageName": "ClientUpdates",
-            "PackagePath": "\\\\JPH-CM01\\Source\\UpdatePackages\\",
+            "PackagePath": "\\\\JPH-CM01\\Source\\UpdatePackages\\ClientUpdates",
             "DistributionPointGroupName": "Full Site"
         },
         "LogPath": "C:\\Scripts\\UpdateLog.log",
@@ -30,6 +30,11 @@
             {
                 "Searcher": ".*32-Bit.*"
             }
+        ],
+        "BannedCategories": [
+            {
+                "BannedCategory": "Upgrades"
+            }
         ]
     },
     "Deployments": [
@@ -41,10 +46,13 @@
             "UserNotification": "DisplayAll",
             "UnprotectedType": "UnprotectedDistributionPoint",
             "WakeOnLAN": true,
-            "SoftwareInstallation": true,
+            "SoftwareInstallation": false,
             "AllowRestart": false,
             "RestartServer": false,
-            "RestartWorkstation": false
+            "RestartWorkstation": false,
+            "UseBranchCache": false,
+            "UseMeteredNetwork": false,
+            "DownloadFromMicrosoftUpdate": false
         },
         {
             "DeploymentName": "Shared Pilot",
@@ -57,7 +65,10 @@
             "SoftwareInstallation": true,
             "AllowRestart": false,
             "RestartServer": false,
-            "RestartWorkstation": false
+            "RestartWorkstation": false,
+            "UseBranchCache": false,
+            "UseMeteredNetwork": false,
+            "DownloadFromMicrosoftUpdate": false
         },
         {
             "DeploymentName": "Shared Prod",
@@ -70,7 +81,10 @@
             "SoftwareInstallation": true,
             "AllowRestart": false,
             "RestartServer": false,
-            "RestartWorkstation": false
+            "RestartWorkstation": false,
+            "UseBranchCache": false,
+            "UseMeteredNetwork": false,
+            "DownloadFromMicrosoftUpdate": false
         },
         {
             "DeploymentName": "NonShared Pilot",
@@ -85,7 +99,10 @@
             "SoftwareInstallation": true,
             "AllowRestart": false,
             "RestartServer": false,
-            "RestartWorkstation": false
+            "RestartWorkstation": false,
+            "UseBranchCache": false,
+            "UseMeteredNetwork": false,
+            "DownloadFromMicrosoftUpdate": false
         },
         {
             "DeploymentName": "NonShared Prod",
@@ -100,7 +117,10 @@
             "SoftwareInstallation": true,
             "AllowRestart": false,
             "RestartServer": false,
-            "RestartWorkstation": false
+            "RestartWorkstation": false,
+            "UseBranchCache": false,
+            "UseMeteredNetwork": false,
+            "DownloadFromMicrosoftUpdate": false
         }
     ]
 }

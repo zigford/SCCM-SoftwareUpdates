@@ -26,16 +26,27 @@
     PARAM
     (
         [Parameter(Position=1, Mandatory=$true)] $logMsg,
-        [Parameter(Position=2)] $msgType = $global:LogTypeInfo
+        [Parameter(Position=2)][ValidateSet(
+            'Info',
+            'Warn',
+            'Error',
+            'Verbose'
+        )] $msgType = 'Info'
     )
-    
+    $Type = Switch ($msgType){
+        'Info' {1}
+        'Warn' {2}
+        'Error'{3}
+        'Verbose'{4}
+    }
+     
     #Populate the variables to log
     $time = [DateTime]::Now.ToString("HH:mm:ss.fff+000");
     $date = [DateTime]::Now.ToString("MM-dd-yyyy");
     $component = $myInvocation.ScriptName | Split-Path -leaf
     $file = $myInvocation.ScriptName
         
-    $tempMsg = [String]::Format("<![LOG[{0}]LOG]!><time=`"{1}`" date=`"{2}`" component=`"{3}`" context=`"`" type=`"{4}`" thread=`"`" file=`"{5}`">",$logMsg, $time, $date, $component, $msgType, $file)
+    $tempMsg = [String]::Format("<![LOG[{0}]LOG]!><time=`"{1}`" date=`"{2}`" component=`"{3}`" context=`"`" type=`"{4}`" thread=`"`" file=`"{5}`">",$logMsg, $time, $date, $component, $Type, $file)
         
     if($debug)
     {
@@ -43,6 +54,50 @@
     }
         
     $tempMsg | Out-File -encoding ASCII -Append -FilePath $global:logFile 
+}
+
+function Get-PatchTuesday { 
+    <#  
+    .SYNOPSIS   
+        Get the Patch Tuesday of a month 
+    .PARAMETER month 
+    The month to check
+    .PARAMETER year 
+    The year to check
+    .EXAMPLE  
+    Get-PatchTue -month 6 -year 2015
+    .EXAMPLE  
+    Get-PatchTue June 2015
+    #> 
+    [CmdLetBinding()]    
+    param( 
+        [string]$month = (get-date).month, 
+        [string]$year = (get-date).year
+    ) 
+
+    $firstdayofmonth = [datetime] ([string]$month + "/1/" + [string]$year)
+    (0..30 | ForEach-Object {$firstdayofmonth.adddays($_) } | Where-Object {$_.dayofweek -like "Tue*"})[1]
+ 
+}
+
+function Get-DaysSinceLastUpdateGroupCreation {
+    [CmdLetBinding()]
+    Param($Config)
+
+    Import-ConfigManagerModule
+    Push-Location
+    Set-Location "$($Config.SiteSettings.SiteCode):\"
+    $LatestUpdateGroup = Get-CMSoftwareUpdateGroup | Where-Object {$_.CreatedBy -ne 'AutoUpdateRuleEngine'} |
+        Sort-Object -Descending DateCreated | Select-Object -First 1
+    Pop-Location
+    If ($LatestUpdateGroup) {
+        $Days = ((Get-Date) - $LatestUpdateGroup.DateCreated).Days
+        Write-Entry "$Days days since last update group creation."
+    } else {
+        $Days = 30
+        Write-Entry "Unable to find update group created. Returning sane amount of 30"
+    }
+    $Days
 }
 
 function Import-ConfigManagerModule {
@@ -75,50 +130,17 @@ function New-UpdateGroup {
     Param($GroupName,$Config)
     Begin {
         $Products = $Config.SiteSettings.Products.Product
-        $ReleasedOrRevised = [int]-$Config.SiteSettings.ReleasedOrRevised
+        if ($Config.SiteSettings.ReleasedOrRevised -eq "SinceLastUpdateGroup") {
+            $ReleasedOrRevised = [int]-(Get-DaysSinceLastUpdateGroupCreation -Config $Config)    
+        } else {
+            $ReleasedOrRevised = [int]-$Config.SiteSettings.ReleasedOrRevised
+        }
         $TitleSearchers= $Config.SiteSettings.TitleSearchers.Searcher
+        $BannedCategories = $Config.SiteSettings.BannedCategories.BannedCategory
         $SiteCode = $Config.SiteSettings.SiteCode
         function Get-CfgApplicableUpdates {
             [CmdletBinding()]
-            Param($ReleasedOrRevised,$Products,$TitleSearchers)
-            $BannedCategories = 
-                'Finnish',
-                'Turkish',
-                'Dutch',
-                'Hebrew',
-                'German',
-                'Danish',
-                'French',
-                'Hungarian',
-                'Spanish',
-                'Norwegian',
-                'Russian',
-                'Japanese',
-                'Italian',
-                'Greek',
-                'Korean',
-                'Chinese',
-                'Polish',
-                'Swedish',
-                'Portuguese',
-                'Serbian',
-                'Portuguese (Brazil)',
-                'Thai',
-                'Slovak',
-                'Slovenian',
-                'Estonian',
-                'Lithuanian',
-                'Romanian',
-                'Serbian',
-                'Bulgarian',
-                'Arabic',
-                'Czech',
-                'Ukrainian',
-                'Latvian',
-                'Croatian',
-                'Chinese (Traditional, Taiwan)',
-                'Chinese (Simplified, China)',
-                'Upgrades'
+            Param($ReleasedOrRevised,$Products,$TitleSearchers,$BannedCategories)
             #Write-Host "TitleSearchers are: $TitleSearchers" -ForegroundColor "Yellow"
             #Write-Host "Products are: $Products" -ForegroundColor "Yellow"
             Get-CMSoftwareUpdate -DateRevisedMin (Get-Date).AddDays($ReleasedOrRevised) -Fast -CategoryName $Products| Where-Object {
@@ -129,7 +151,7 @@ function New-UpdateGroup {
                     }
                 }
                 If ($AllowedUpdate -eq $False) {
-                    Write-Entry "Update: $($_.LocalizedDisplayName) was not allowed by category" -msgType $global:LogTypeInfo
+                    Write-Entry "Update: $($_.LocalizedDisplayName) was not allowed by category" -msgType Warn
                 }
                 $MatchesTitle = $False
                 ForEach ($TitleSearcher in $TitleSearchers) {
@@ -138,7 +160,7 @@ function New-UpdateGroup {
                     }
                 }
                 If ($MatchesTitle -eq $False) {
-                    Write-Entry "Update: $($_.LocalizedDisplayName) was not allowed by unmatched title search" -msgType $global:LogTypeInfo
+                    Write-Entry "Update: $($_.LocalizedDisplayName) was not allowed by unmatched title search" -msgType Warn
                 }
                 $AllowedUpdate -and $MatchesTitle
             }
@@ -148,19 +170,30 @@ function New-UpdateGroup {
         Push-Location
         Import-ConfigManagerModule
         Set-Location -Path "$($SiteCode):\"
-        $Updates = Get-CfgApplicableUpdates -ReleasedOrRevised $ReleasedOrRevised -Products $Products -TitleSearchers $TitleSearchers
+        $Updates = Get-CfgApplicableUpdates -ReleasedOrRevised $ReleasedOrRevised `
+            -Products $Products `
+            -TitleSearchers $TitleSearchers `
+            -BannedCategories $BannedCategories
+        If ($Updates) {
+            Write-Entry "Adding $($Updates.Count) updates to $GroupName" -msgType Info
+            If (-Not (Get-CMSoftwareUpdateGroup -Name $GroupName)) {
+                Write-Verbose "Software Update Group $GroupName does not exist"
+                Write-Entry "Software Update Group $GroupName does not exist" -msgType Warn
+                $UpdateGroup = New-CMSoftwareUpdateGroup -Name $GroupName -Description "Updates for USC Computers $(Get-Date -F MMMM) $(Get-Date -F yyyy)"
+            } Else {
+                Write-Verbose "Software Update Group $GroupName found"
+                Write-Entry "Software Update Group $GroupName found" -msgType Info
+                $UpdateGroup = Get-CMSoftwareUpdateGroup -Name $GroupName
+            }
 
-        If (-Not (Get-CMSoftwareUpdateGroup -Name $GroupName)) {
-            Write-Verbose "Software Group $GroupName does not exist"
-            $UpdateGroup = New-CMSoftwareUpdateGroup -Name $GroupName -Description "Updates for USC Computers $(Get-Date -F MMMM) $(Get-Date -F yyyy)"
+            $Updates | ForEach-Object {
+                Write-Entry "Adding $($_.LocalizedDisplayName) to $GroupName"
+                Add-CMSoftwareUpdateToGroup -SoftwareUpdate $_ -SoftwareUpdateGroup $UpdateGroup
+            }
         } Else {
-            Write-Verbose "Software Group $GroupName found"
-            $UpdateGroup = Get-CMSoftwareUpdateGroup -Name $GroupName
+            Write-Entry "No updates detected since the last $ReleasedOrRevised days" -msgType Info
         }
-
-        $Updates | ForEach-Object {
-            Add-CMSoftwareUpdateToGroup -SoftwareUpdate $_ -SoftwareUpdateGroup $UpdateGroup
-        }
+        $Updates # Return updates to show that we found some
         Pop-Location    
     }
 }
@@ -179,13 +212,15 @@ function Add-UpdateToPackage {
     Set-Location "$($SiteCode):\"
     $DeploymentPackage = Get-CMSoftwareUpdateDeploymentPackage -Name $DeploymentPackageName
     If (-Not $DeploymentPackage) {
+        Write-Entry "Deployment package doesn't exist. Attempting to create."
         Pop-Location
         If (-Not (Test-Path -Path $DeploymentPackagePath -ErrorAction SilentlyContinue)) {
-            New-Item -Path $DeploymentPackagePath -Name $DeploymentPackageName -ItemType Directory -Force
+            New-Item -Path $DeploymentPackagePath -ItemType Directory -Force
         }
         Set-Location "$($SiteCode):\"
         $DeploymentPackage = New-CMSoftwareUpdateDeploymentPackage -Name $DeploymentPackageName -Description 'Created by Jesse Harris Script' -Path $DeploymentPackagePath
     }
+    Write-Entry "Downloading Updates from update group $GroupName to package $DeploymentPackageName"
     Get-CMSoftwareUpdateGroup -Name $GroupName | Save-CMSoftwareUpdate -DeploymentPackageName $DeploymentPackageName -SoftwareUpdateLanguage "English"
     Pop-Location
 }
@@ -196,6 +231,7 @@ function Start-UpdatePackageDistribution {
     Import-ConfigManagerModule
     Push-Location
     Set-Location "$($Config.SiteSettings.SiteCode):\"
+    Write-Entry "Distributing content for $($Config.SiteSettings.UpdatePackage.PackageName) to DP Group: $($Config.SiteSettings.UpdatePackage.DistributionPointGroupName)"
     Get-CMSoftwareUpdateDeploymentPackage `
         -Name $Config.SiteSettings.UpdatePackage.PackageName | `
         Start-CMContentDistribution `
@@ -265,6 +301,7 @@ function New-CfgSoftwareUpdateDeployments {
             } else {
                 $Deadline = $Available
             }
+            Write-Entry "Deployment: $($Deployment.DeploymentName) available on: $($Available.Day) at $($Available.Time) and deadline on: $($Deadline.Day) at $($Deadline.Time)"
             If ($LogOnly) {
                 Write-Verbose "Deployment: $($Deployment.DeploymentName) available on: $($Available.Day) at $($Available.Time)"
                 Write-Verbose "Deployment: $($Deployment.DeploymentName) deadline on: $($Deadline.Day) at $($Deadline.Time)"
@@ -275,9 +312,12 @@ function New-CfgSoftwareUpdateDeployments {
                 $DeploymentCheck = Get-CMDeployment -SoftwareName $GroupName -CollectionName $Deployment.Collection
                 If ($DeploymentCheck) {
                     Write-Verbose "Deployment already exists"
+                    Write-Entry "Deployment for $GroupName to collection $($Deployment.Collection) already exists. Doing nothing"
                     $DeploymentCheck
                 } else {
                     if (Get-Command New-CMSoftwareUpdateDeployment) {
+                        Write-Entry "Detected SCCM 1702 or greater. Using new cmdlets"
+                        Write-Entry "Creating update deployment for $GroupName to $($Deployment.Collection)"
                         New-CMSoftwareUpdateDeployment `
                             -SoftwareUpdateGroupName $GroupName `
                             -CollectionName $Deployment.Collection `
@@ -296,38 +336,37 @@ function New-CfgSoftwareUpdateDeployments {
                             -RestartWorkstation $Deployment.RestartWorkstation `
                             -ProtectedType RemoteDistributionPoint `
                             -UnprotectedType $Deployment.UnprotectedType `
-                            -DownloadFromMicrosoftUpdate $False `
-                            -UseMeteredNetwork $False `
-                            -UseBranchCache $False
+                            -DownloadFromMicrosoftUpdate $Deployment.DownloadFromMicrosoftUpdate `
+                            -UseMeteredNetwork $Deployment.UseMeteredNetwork `
+                            -UseBranchCache $Deployment.UseBranchCache
                     } Else {
+                        Write-Entry "Detected SCCM 1610 or lower. Using legacy cmdlets"
+                        Write-Entry "Creating update deployment for $GroupName to $($Deployment.Collection)"
                         Start-CMSoftwareUpdateDeployment `
                             -SoftwareUpdateGroupName $GroupName `
                             -CollectionName $Deployment.Collection `
                             -DeploymentName $Deployment.DeploymentName `
                             -Description "Windows Updates for $StrMonth $Year" `
                             -DeploymentType Required `
-                            -SendWakeUpPacket $Deployment.WakeOnLAN 
+                            -SendWakeUpPacket $Deployment.WakeOnLAN `
                             -VerbosityLevel AllMessages `
                             -TimeBasedOn Local `
                             -DeploymentAvailableDay $Available.Day `
                             -DeploymentAvailableTime $Available.Time `
+                            -DeploymentExpireDay $Deadline.Day `
+                            -DeploymentExpireTime $Deadline.Time `
                             -UserNotification $Deployment.UserNotification `
                             -SoftwareInstallation $Deployment.SoftwareInstallation `
                             -AllowRestart $Deployment.AllowRestart `
                             -RestartServer $Deployment.RestartServer `
                             -RestartWorkstation $Deployment.RestartWorkstation `
-                            <#-PersistOnWriteFilterDevice $False#> `
-                            <#-GenerateSuccessAlert $True#> `
-                            <#-PercentSuccess 90#> `
-                            <#-TimeValue 10#> `
-                            <#-TimeUnit Days#> `
                             -DisableOperationsManagerAlert $True `
                             -GenerateOperationsManagerAlert $True `
                             -ProtectedType RemoteDistributionPoint `
                             -UnprotectedType $Deployment.UnprotectedType `
-                            -UseBranchCache $True `
-                            -DownloadFromMicrosoftUpdate $True `
-                            -AllowUseMeteredNetwork $False
+                            -UseBranchCache $Deployment.UseBranchCache `
+                            -DownloadFromMicrosoftUpdate $Deployment.DownloadFromMicrosoftUpdate `
+                            -AllowUseMeteredNetwork $Deployment.UseMeteredNetwork 
                     }
                 }
                 Pop-Location
