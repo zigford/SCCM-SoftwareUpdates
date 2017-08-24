@@ -9,6 +9,13 @@
             "DistributionPointGroupName": "Full Site"
         },
         "LogPath": "C:\\Scripts\\UpdateLog.log",
+        "ReportPath": "C:\\Scripts\\Report.log",
+        "ReportRecipiants": [
+            {
+                "Recipant": "jpharris@usc.edu.au"
+            }
+        ],
+        "SMTPServer": "mail.usc.edu.au",
         "Products": [
                 {
                     "Product": "Windows 10"
@@ -46,13 +53,17 @@
             "UserNotification": "DisplayAll",
             "UnprotectedType": "UnprotectedDistributionPoint",
             "WakeOnLAN": true,
-            "SoftwareInstallation": false,
+            "SoftwareInstallation": true,
             "AllowRestart": false,
             "RestartServer": false,
             "RestartWorkstation": false,
             "UseBranchCache": false,
             "UseMeteredNetwork": false,
-            "DownloadFromMicrosoftUpdate": false
+            "DownloadFromMicrosoftUpdate": false,
+            "DeploymentType": "Required",
+            "AcceptEULA": true,
+            "TimeBasedOn": "Local",
+            "Enabled": false
         },
         {
             "DeploymentName": "Shared Pilot",
@@ -68,7 +79,11 @@
             "RestartWorkstation": false,
             "UseBranchCache": false,
             "UseMeteredNetwork": false,
-            "DownloadFromMicrosoftUpdate": false
+            "DownloadFromMicrosoftUpdate": false,
+            "DeploymentType": "Required",
+            "AcceptEULA": true,
+            "TimeBasedOn": "Local",
+            "Enabled": false
         },
         {
             "DeploymentName": "Shared Prod",
@@ -84,7 +99,11 @@
             "RestartWorkstation": false,
             "UseBranchCache": false,
             "UseMeteredNetwork": false,
-            "DownloadFromMicrosoftUpdate": false
+            "DownloadFromMicrosoftUpdate": false,
+            "DeploymentType": "Required",
+            "AcceptEULA": true,
+            "TimeBasedOn": "Local",
+            "Enabled": false
         },
         {
             "DeploymentName": "NonShared Pilot",
@@ -102,7 +121,11 @@
             "RestartWorkstation": false,
             "UseBranchCache": false,
             "UseMeteredNetwork": false,
-            "DownloadFromMicrosoftUpdate": false
+            "DownloadFromMicrosoftUpdate": false,
+            "DeploymentType": "Required",
+            "AcceptEULA": true,
+            "TimeBasedOn": "Local",
+            "Enabled": false
         },
         {
             "DeploymentName": "NonShared Prod",
@@ -120,7 +143,11 @@
             "RestartWorkstation": false,
             "UseBranchCache": false,
             "UseMeteredNetwork": false,
-            "DownloadFromMicrosoftUpdate": false
+            "DownloadFromMicrosoftUpdate": false,
+            "DeploymentType": "Required",
+            "AcceptEULA": true,
+            "TimeBasedOn": "Local",
+            "Enabled": false
         }
     ]
 }
