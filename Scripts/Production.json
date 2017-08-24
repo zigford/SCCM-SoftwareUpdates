@@ -9,10 +9,10 @@
             "DistributionPointGroupName": "Full Site"
         },
         "LogPath": "C:\\Scripts\\UpdateLog.log",
-        "ReportPath": "C:\\Scripts\\Report.log",
+        "ReportPath": "C:\\Scripts\\Report.txt",
         "ReportRecipiants": [
             {
-                "Recipiant": "jpharris@usc.edu.au"
+                "Recipiant": "UG_ClientSystems@usceduau.onmicrosoft.com"
             }
         ],
         "SMTPServer": "mail.usc.edu.au",
@@ -89,7 +89,7 @@
             "DeploymentType": "Required",
             "AcceptEULA": true,
             "TimeBasedOn": "Local",
-            "Enabled": false
+            "Enabled": true
         },
         {
             "DeploymentName": "02 - Shared Pilot",
@@ -109,7 +109,7 @@
             "DeploymentType": "Required",
             "AcceptEULA": true,
             "TimeBasedOn": "Local",
-            "Enabled": false
+            "Enabled": true
         },
         {
             "DeploymentName": "03 - Shared Production",
@@ -129,7 +129,7 @@
             "DeploymentType": "Required",
             "AcceptEULA": true,
             "TimeBasedOn": "Local",
-            "Enabled": false
+            "Enabled": true
         },
         {
             "DeploymentName": "04 - NonShared Pilot",
@@ -151,7 +151,7 @@
             "DeploymentType": "Required",
             "AcceptEULA": true,
             "TimeBasedOn": "Local",
-            "Enabled": false
+            "Enabled": true
         },
         {
             "DeploymentName": "05 - NonShared Production",
@@ -173,7 +173,7 @@
             "DeploymentType": "Required",
             "AcceptEULA": true,
             "TimeBasedOn": "Local",
-            "Enabled": false
+            "Enabled": true
         }
     ]
 }
