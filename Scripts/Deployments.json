@@ -17,31 +17,60 @@
         ],
         "SMTPServer": "mail.usc.edu.au",
         "Products": [
-                {
-                    "Product": "Windows 10"
-                },
-                {
-                    "Product": "Office 2016"
-                }
-        ],
-        "TitleSearchers": [
             {
-                "Searcher": ".*Windows\\sMalicious\\sSoftware\\sRemoval\\sTool.*10.*x64.*"
+                "Product": "Windows 10",
+                "TitleSearchers": [
+                    {
+                        "Searcher": ".*Windows\\sMalicious\\sSoftware\\sRemoval\\sTool.*10.*x64.*"
+                    },
+                    {
+                        "Searcher": "^.*(1703|1607).*x64.*$"
+                    }
+                ],
+                "BannedCategories": [
+                    {
+                    "BannedCategory": "Upgrades"
+                    }
+                ]
             },
             {
-                "Searcher": ".*1607.*x64.*"
+                "Product": "Windows 7",
+                "TitleSearchers": [
+                    {
+                        "Searcher": "^(?!.*Security\\sOnly)(?!.*Preview).*x64.*$"
+                    }
+                ]
             },
             {
-                "Searcher": ".*1703.*x64'*"
+                "Product": "Office 2013",
+                "TitleSearchers": [
+                    {
+                        "Searcher": "32-Bit\\sEdition"
+                    }
+                ]
             },
             {
-                "Searcher": ".*32-Bit.*"
+                "Product": "Office 2016",
+                "TitleSearchers": [
+                    {
+                        "Searcher": ".*32-Bit.*"
+                    }
+                ]
+            },
+            {
+                "Product": "Office 365 Client",
+                "TitleSearchers": [
+                    {
+                        "Searcher": "^(?!.*First\\sRelease).*Monthly\\sChannel(?!\\ \\(Targeted\\)).*(x86|32-bit).*"
+                    }
+                ]
+            },
+            {
+                "Product": "Silverlight"
             }
         ],
-        "BannedCategories": [
-            {
-                "BannedCategory": "Upgrades"
-            }
+        "Languages": [
+            "English"
         ]
     },
     "Deployments": [

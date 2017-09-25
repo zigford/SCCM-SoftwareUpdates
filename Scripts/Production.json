@@ -4,8 +4,8 @@
         "SiteCode": "SC1",
         "SiteServer": "wsp-configmgr01",
         "UpdatePackage": {
-            "PackageName": "Windows Client",
-            "PackagePath": "\\\\usc.internal\\usc\\appdev\\SCCMPackages\\Updates\\2016 Windows7",
+            "PackageName": "Windows Client 2017",
+            "PackagePath": "\\\\usc.internal\\usc\\appdev\\SCCMPackages\\Updates\\Windows Client 2017",
             "DistributionPointGroupName": "Full Site"
         },
         "LogPath": "C:\\Scripts\\UpdateLog.log",
@@ -68,7 +68,8 @@
             {
                 "Product": "Silverlight"
             }
-        ]
+        ],
+        "Languages": "English"
     },
     "Deployments": [
         {
