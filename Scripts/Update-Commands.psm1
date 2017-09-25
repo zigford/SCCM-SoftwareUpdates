@@ -244,6 +244,12 @@ function Add-UpdateToPackage {
     $DeploymentPackageName = $Config.SiteSettings.UpdatePackage.PackageName
     $DeploymentPackagePath = $Config.SiteSettings.UpdatePackage.PackagePath
     $SiteCode = $Config.SiteSettings.SiteCode
+    $Languages = $Config.SiteSettings.Languages
+    If ($Languages) {
+        ForEach ($Lang in $Languages) {
+            Write-Entry "Selected $Lang language to download"
+        }
+    }
 
     Import-ConfigManagerModule -SiteCode $Config.SiteSettings.SiteCode -SiteServer $Config.SiteSettings.SiteServer
     Push-Location
@@ -259,7 +265,24 @@ function Add-UpdateToPackage {
         $DeploymentPackage = New-CMSoftwareUpdateDeploymentPackage -Name $DeploymentPackageName -Description 'Created by Jesse Harris Script' -Path $DeploymentPackagePath
     }
     Write-Entry "Downloading Updates from update group $GroupName to package $DeploymentPackageName"
-    Get-CMSoftwareUpdateGroup -Name $GroupName | Save-CMSoftwareUpdate -DeploymentPackageName $DeploymentPackageName -SoftwareUpdateLanguage "English"
+    Get-CMSoftwareUpdate -UpdateGroupName $GroupName -Fast | ForEach-Object {
+        #  Set max amount of times to attempt download
+        $MAXTRIES = 3
+        #  We start at 1 due to using le
+        $Tries = 1
+        #  While the update is not download it, try and do so 3 times.
+        While (((Get-CMSoftwareUpdate -Id $_.CI_ID -Fast).IsContentProvisioned -ne $True) -and ($Tries -le $MAXTRIES) ) {
+            Write-Entry "Attempt $Tries of $MAXTRIES to download $($_.LocalizedDisplayName)"
+            $Tries++
+            if ($Languages) {
+                #  Specific languages have been specified. Limit download to those.
+                $_ | Save-CMSoftwareUpdate -DeploymentPackageName $DeploymentPackageName -SoftwareUpdateLanguage $Languages
+            } Else {
+                #  Download all types by not specifying the language
+                $_ | Save-CMSoftwareUpdate -DeploymentPackageName $DeploymentPackageName
+            }
+        }
+    }
     Pop-Location
 }
 
