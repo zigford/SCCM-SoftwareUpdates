@@ -13,7 +13,7 @@ Try {
 $Global:logfile = $Config.SiteSettings.LogPath
 $Global:reportfile = $Config.SiteSettings.ReportPath
 
-If ((Get-PatchTuesday).AddDays(17) -eq (Today)) {
+If ((Get-PatchTuesday).AddDays(2) -eq (Today)) {
     Write-Entry "Patch Tuesday today. Lets get to work" -msgType Info
     # Group Name formatting code
     $Month = $((Get-Date).Month.ToString("00"))
