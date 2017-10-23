@@ -102,7 +102,9 @@ function Get-DaysSinceLastUpdateGroupCreation {
     Import-ConfigManagerModule -SiteCode $Config.SiteSettings.SiteCode -SiteServer $Config.SiteSettings.SiteServer
     Push-Location
     Set-Location "$($Config.SiteSettings.SiteCode):\"
-    $LatestUpdateGroup = Get-CMSoftwareUpdateGroup | Where-Object {$_.CreatedBy -ne 'AutoUpdateRuleEngine'} |
+    $LatestUpdateGroup = Get-CMSoftwareUpdateGroup | Where-Object {
+        ($_.CreatedBy -ne 'AutoUpdateRuleEngine') -and 
+        ($_.LocalizedDisplayName -match $Config.SiteSettings.GroupName.NamePattern)} |
         Sort-Object -Descending DateCreated | Select-Object -First 1
     Pop-Location
     If ($LatestUpdateGroup) {
