@@ -20,7 +20,7 @@ If ((Get-PatchTuesday).AddDays(2) -eq (Today)) {
     $Year = $(Get-Date -F yyyy)
     $StrMonth = $(Get-Date -F MMMM)
     $Day = $(Get-Date -Format dd)
-    $GroupName = "$Month - $StrMonth $Year Windows Clients"
+    $GroupName = $ExecutionContext.InvokeCommand.ExpandString($Config.SiteSettings.GroupName.NameFormat)
     Write-Entry "Working on $GroupName"
     $Updates = New-UpdateGroup -GroupName $GroupName -Config $Config
     If ($Updates | Where-Object {$_.Applicable -eq $True}) {

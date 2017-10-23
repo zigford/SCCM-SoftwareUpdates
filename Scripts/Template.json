@@ -3,6 +3,10 @@
         "ReleasedOrRevised": "SinceLastUpdateGroup",
         "SiteCode": "TMP",
         "SiteServer": "ConfigMgrServer01",
+        "GroupName": {
+            "NameFormat": "$Month - $StrMonth $Year Windows Clients",
+            "NamePattern": "^\\d{2}\\s-\\s\\w+\\s\\d{4}\\s\\w+\\s\\w+$"
+        },
         "UpdatePackage": {
             "PackageName": "Windows Client 2017",
             "PackagePath": "\\\\ConfigMgrServer01.Contoso.Com\\Source\\Updates\\Windows Client 2017",
