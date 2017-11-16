@@ -154,12 +154,14 @@ function Get-CfgApplicableUpdates {
     Param(
         $ReleasedOrRevised=30,$Products='Windows 10',$TitleSearchers='.*',$BannedCategories,
         [Parameter(Mandatory=$True)]$SiteCode,
-        [Parameter(Mandatory=$True)]$SiteServer
+        [Parameter(Mandatory=$True)]$SiteServer,
+        [Switch]$LatestVersionOnly
         )
     Import-ConfigManagerModule -SiteCode $SiteCode -SiteServer $SiteServer
     Push-Location
     Set-Location "$($SiteCode):\"
     Write-Entry "Getting updates for $Products" -msgType Info
+    $AllUpdates = @()
     Get-CMSoftwareUpdate -DateRevisedMin (Get-Date).AddDays([int]-$ReleasedOrRevised) -Fast -CategoryName $Products| ForEach-Object {
         $AllowedUpdate = $True
         ForEach ($Category in $_.LocalizedCategoryInstanceNames) {
@@ -180,10 +182,39 @@ function Get-CfgApplicableUpdates {
             Write-Entry "Update:$($_.LocalizedDisplayName) was marked as not applicable" -msgType Warn
             $Applicable = $False
         }
-        [PSCustomObject]@{
+        $UpdateObject = [PSCustomObject]@{
             'DisplayName' = $_.LocalizedDisplayName
             'Applicable' = $Applicable
             'UpdateObject' = $_
+        }
+        if ($LatestVersionOnly) {
+            $AllUpdates+=$UpdateObject
+        } else {
+            $UpdateObject
+        }
+    }
+    If ($AllUpdates) {
+        $LatestVerion = [Version]::Parse("0.0.0.0")
+        # The next block will append a version property onto each object for the sake of returning the latest only.
+        $AllUpdates | Where-Object {$_.Applicable}| ForEach-Object {
+            Try {
+                $UpdateVersion = [Version]::Parse(([regex]'\d+\.(\d+\.|\d+)').Matches($_.DisplayName).Groups[0].Value)
+                $_ | Add-Member -MemberType NoteProperty -Name Version -Value $UpdateVersion
+                If ($UpdateVersion -gt $LatestVerion) {
+                    $LatestVerion = $UpdateVersion
+                }
+            } catch {
+                Write-Warning -Message "A Version for $($_.DisplayName) couldn't be determined."
+                $_
+            }
+
+        }
+        $AllUpdates | ForEach-Object {
+            If ($_.Applicable -and $_.Version -eq $LatestVerion){
+                $_ | Add-Member -MemberType NoteProperty -Name Applicable -Value $True -Force -PassThru
+            } else {
+                $_ | Add-Member -MemberType NoteProperty -Name Applicable -Value $False -Force -PassThru
+            }
         }
     }
     Pop-Location
@@ -211,7 +242,8 @@ function New-UpdateGroup {
                 -Products $Product.Product `
                 -TitleSearchers $Product.TitleSearchers.Searcher `
                 -BannedCategories $Product.BannedCategories.BannedCategory `
-                -SiteCode $SiteCode -SiteServer $Config.SiteSettings.SiteServer
+                -SiteCode $SiteCode -SiteServer $Config.SiteSettings.SiteServer `
+                -LatestVersionOnly:$Product.LatestVersionOnly
         }
         If ($Updates | Where-Object {$_.Applicable -eq $True}) {
             Write-Entry "Adding $(($Updates | Where-Object {$_.Applicable -eq $True}).Count) updates to $GroupName" -msgType Info

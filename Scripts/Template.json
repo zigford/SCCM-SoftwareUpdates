@@ -67,7 +67,8 @@
                     {
                         "Searcher": "^(?!.*First\\sRelease).*Monthly\\sChannel(?!\\ \\(Targeted\\)).*(x86|32-bit).*"
                     }
-                ]
+                ],
+                "LatestVersionOnly": true
             },
             {
                 "Product": "Silverlight"
