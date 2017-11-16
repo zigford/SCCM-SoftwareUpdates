@@ -33,18 +33,21 @@ If ((Get-PatchTuesday).AddDays(2) -eq (Today)) {
         $Updates | Where-Object {$_.Applicable -eq $True} | ForEach-Object {
             Write-Report "$($_.UpdateObject.LocalizedDisplayName)"
         }
-        Add-UpdateToPackage -Config $Config -GroupName $GroupName
-        Start-UpdatePackageDistribution -Config $Config
-        Write-Report "`r`nList of deployments:`r`n"
-        New-CfgSoftwareUpdateDeployments -GroupName $GroupName -Config $Config | ForEach-Object {
-            If ($_.StartTime) {
-                Write-Report "$($_.AssignmentName) StartTime: $($_.StartTime) Deadline: $($_.EnforcementDeadline)"
-            } Else {
-                Write-Report "$($_.SoftwareName): Collection: $($_.CollectionName) StartTime: $($_.DeploymentTime) Deadline: $($_.EnforcementDeadline)"
+        if ((Add-UpdateToPackage -Config $Config -GroupName $GroupName) -eq $False) {
+            Write-Report "`r`nUnable to fullydownload updates. Aborting.."
+        } else {
+            Start-UpdatePackageDistribution -Config $Config
+            Write-Report "`r`nList of deployments:`r`n"
+            New-CfgSoftwareUpdateDeployments -GroupName $GroupName -Config $Config | ForEach-Object {
+                If ($_.StartTime) {
+                    Write-Report "$($_.AssignmentName) StartTime: $($_.StartTime) Deadline: $($_.EnforcementDeadline)"
+                } Else {
+                    Write-Report "$($_.SoftwareName): Collection: $($_.CollectionName) StartTime: $($_.DeploymentTime) Deadline: $($_.EnforcementDeadline)"
+                }
             }
+            Write-Entry "Finished Deploying Updates."
         }
-        Write-Entry "Finished Deploying Updates."
-        If ($Config.SiteSettings.ReportRecipiants) {
+        If ($Config.SiteSettings.ReportRecipiants.Recipiant) {
             $Body = "Please see the attched report log"
             $MessageParams = @{
                 To = $Config.SiteSettings.ReportRecipiants.Recipiant

@@ -278,14 +278,16 @@ function Add-UpdateToPackage {
     $DeploymentPackageName = $Config.SiteSettings.UpdatePackage.PackageName
     $DeploymentPackagePath = $Config.SiteSettings.UpdatePackage.PackagePath
     $SiteCode = $Config.SiteSettings.SiteCode
+    $SiteServer = $Config.SiteSettings.SiteServer
     $Languages = $Config.SiteSettings.Languages
+    $ReturnCode = $True
     If ($Languages) {
         ForEach ($Lang in $Languages) {
             Write-Entry "Selected $Lang language to download"
         }
     }
 
-    Import-ConfigManagerModule -SiteCode $Config.SiteSettings.SiteCode -SiteServer $Config.SiteSettings.SiteServer
+    Import-ConfigManagerModule -SiteCode $SiteCode -SiteServer $SiteServer
     Push-Location
     Set-Location "$($SiteCode):\"
     $DeploymentPackage = Get-CMSoftwareUpdateDeploymentPackage -Name $DeploymentPackageName
@@ -301,23 +303,30 @@ function Add-UpdateToPackage {
     Write-Entry "Downloading Updates from update group $GroupName to package $DeploymentPackageName"
     Get-CMSoftwareUpdate -UpdateGroupName $GroupName -Fast | ForEach-Object {
         #  Set max amount of times to attempt download
-        $MAXTRIES = 3
+        $MAXTRIES = 10
         #  We start at 1 due to using le
         $Tries = 1
         #  While the update is not download it, try and do so 3 times.
         While (((Get-CMSoftwareUpdate -Id $_.CI_ID -Fast).IsContentProvisioned -ne $True) -and ($Tries -le $MAXTRIES) ) {
             Write-Entry "Attempt $Tries of $MAXTRIES to download $($_.LocalizedDisplayName)"
             $Tries++
+            $CIID = $_.CI_ID
             if ($Languages) {
                 #  Specific languages have been specified. Limit download to those.
                 $_ | Save-CMSoftwareUpdate -DeploymentPackageName $DeploymentPackageName -SoftwareUpdateLanguage $Languages
+                #Start-Process -FilePath powershell.exe -ArgumentList "-Command ""&{Import-Module $($PSScriptRoot)\Update-Commands.psm1;Import-ConfigManagerModule -SiteCode $SiteCode -SiteServer $SiteServer;Set-Location ""$($SiteCode):\"";Save-CMSoftwareUpdate -SoftwareUpdateId $CIID -DeploymentPackageName $DeploymentPackageName -SoftwareUpdateLanguage $Languages }""" -Wait
             } Else {
                 #  Download all types by not specifying the language
                 $_ | Save-CMSoftwareUpdate -DeploymentPackageName $DeploymentPackageName
+                #Start-Process -FilePath powershell.exe -ArgumentList "-Command ""&{Import-Module $($PSScriptRoot)\Update-Commands.psm1;Import-ConfigManagerModule -SiteCode $SiteCode -SiteServer $SiteServer;Set-Location ""$($SiteCode):\"";Save-CMSoftwareUpdate -SoftwareUpdateId $CIID -DeploymentPackageName $DeploymentPackageName }""" -Wait
             }
+        }
+        If ((Get-CMSoftwareUpdate -Id $_.CI_ID -Fast).IsContentProvisioned -ne $True){
+            $ReturnCode = $False
         }
     }
     Pop-Location
+    $ReturnCode
 }
 
 function Start-UpdatePackageDistribution {
